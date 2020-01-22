@@ -41,7 +41,7 @@ namespace LibraryApi.Controllers
 
             if (response == null)
             {
-                return NotFound("No book with that Id!");
+                return NotFound("No book with that Id!"); // the string is optional
             }
             else
             {
