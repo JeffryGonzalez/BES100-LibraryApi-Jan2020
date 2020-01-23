@@ -16,6 +16,7 @@ namespace LibraryApi.Controllers
         public BooksController(LibraryDataContext context)
         {
             Context = context; // Using DI FTW LOL! 
+            // Trying again.
         }
 
         IQueryable<Book> GetBooksInInventory()
