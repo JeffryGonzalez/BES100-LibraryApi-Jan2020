@@ -26,7 +26,48 @@ namespace LibraryApi.Controllers
         }
 
 
-        [HttpGet("/books/{id:int}")]
+        [HttpPost("/books")]
+        public async Task<IActionResult> AddABook([FromBody] PostBooksRequest bookToAdd)
+        {
+            // Validate it. (if valid, return a 400 Bad Request)
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            // Add it to the domain.
+            //  - PostBooksRequest -> Book
+            var book = new Book
+            {
+                Title = bookToAdd.Title,
+                Author = bookToAdd.Author,
+                Genre = bookToAdd.Genre,
+                NumberOfPages = bookToAdd.NumberOfPages,
+                InInventory = true
+            };
+
+            //  - Add it to the Context.
+            Context.Books.Add(book);
+            //  - Have the context save everything.
+            await Context.SaveChangesAsync();
+            // Return a 201 Created Status Code.
+            //  - Add a location header on the response e.g. Location: http://server/books/8
+            //  - Add the entity
+            //  - Book -> Get BooksDetailResponse
+            
+            var response = new GetBookDetailsResponse
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                Genre = book.Genre,
+                NumberOfPages = book.NumberOfPages
+            };
+
+            return CreatedAtRoute("books#getbookbyid", new { id = response.Id }, response);
+        }
+
+
+        [HttpGet("/books/{id:int}", Name = "books#getbookbyid")]
         public async Task<IActionResult> GetBookById(int id)
         {
             var response = await GetBooksInInventory()
