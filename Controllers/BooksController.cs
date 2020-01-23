@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LibraryApi.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace LibraryApi.Controllers
 {
@@ -19,15 +20,55 @@ namespace LibraryApi.Controllers
             
         }
 
+        /// <summary>
+        /// Gives you all the books that are currently in inventory
+        /// </summary>
+        /// <returns>uh, those books</returns>
         IQueryable<Book> GetBooksInInventory()
         {
             return Context.Books
                 .Where(b => b.InInventory);
         }
 
+        [HttpPut("/books/{id:int}/genre")]
+        public async Task<IActionResult> UpdateTheGenre(int id, [FromBody] string genre)
+        {
+            var book = await GetBooksInInventory().SingleOrDefaultAsync(b => b.Id == id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                book.Genre = genre;
+                await Context.SaveChangesAsync();
 
+                return NoContent();
+            }
+        }
+
+        [HttpDelete("/books/{id:int}")]
+        public async Task<IActionResult> RemoveBookFromInventory(int id)
+        {
+            var book = await GetBooksInInventory().SingleOrDefaultAsync(b => b.Id == id);
+            if(book != null)
+            {
+                book.InInventory = false;
+                await Context.SaveChangesAsync();
+            }
+
+            return NoContent();
+        }
+
+
+        /// <summary>
+        /// Add a book to the inventory
+        /// </summary>
+        /// <param name="bookToAdd">Information about the book you want to add</param>
+        /// <returns></returns>
         [HttpPost("/books")]
-        public async Task<IActionResult> AddABook([FromBody] PostBooksRequest bookToAdd)
+        [Produces("application/json")]
+        public async Task<ActionResult<GetBookDetailsResponse>> AddABook([FromBody] PostBooksRequest bookToAdd)
         {
             // Validate it. (if valid, return a 400 Bad Request)
             if(!ModelState.IsValid)
@@ -43,7 +84,7 @@ namespace LibraryApi.Controllers
                 Genre = bookToAdd.Genre,
                 NumberOfPages = bookToAdd.NumberOfPages,
                 InInventory = true
-            };
+            }; 
 
             //  - Add it to the Context.
             Context.Books.Add(book);
@@ -92,9 +133,15 @@ namespace LibraryApi.Controllers
 
         }
 
-
+        /// <summary>
+        /// Provides a list of all the books in our inventory   
+        /// </summary>
+        /// <param name="genre">If you'd like to filter by genre, use this. Otherwise all books will be returned</param>
+        /// <returns>A List of Books</returns>
+        /// <response code="200">Returns all of your books.</response>
         [HttpGet("/books")]
-        public async Task<IActionResult> GetAllBooks([FromQuery] string genre = "all")
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<GetBooksResponse>> GetAllBooks([FromQuery] string genre = "all")
         {
 
             var books = GetBooksInInventory();
